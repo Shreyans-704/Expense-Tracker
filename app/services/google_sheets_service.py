@@ -338,6 +338,76 @@ def _google_error_message(response: httpx.Response) -> str:
     return message or response.text
 
 
+
+async def get_current_balance() -> str | None:
+    """Get the current balance from the Settings sheet."""
+    token = await _access_token()
+    spreadsheet_id = _required_setting(settings.google_sheet_id, "GOOGLE_SHEET_ID")
+    range_name = quote("Settings!A:B", safe="")
+    url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{range_name}"
+
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        logger.exception("Failed to fetch Settings sheet")
+        raise GoogleSheetsError("Failed to fetch Settings from Google Sheets.") from exc
+
+    data = response.json()
+    for row in data.get("values", []):
+        if row and row[0] == "Current Balance":
+            return row[1] if len(row) > 1 else None
+    return None
+
+
+async def update_current_balance(amount: float) -> None:
+    """Update the current balance in the Settings sheet."""
+    token = await _access_token()
+    spreadsheet_id = _required_setting(settings.google_sheet_id, "GOOGLE_SHEET_ID")
+    range_name = quote("Settings!A:B", safe="")
+    url_get = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{range_name}"
+
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.get(
+                url_get,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        logger.exception("Failed to fetch Settings sheet for update")
+        raise GoogleSheetsError("Failed to fetch Settings for update.") from exc
+
+    data = response.json()
+    row_idx = None
+    for i, row in enumerate(data.get("values", [])):
+        if row and row[0] == "Current Balance":
+            row_idx = i + 1
+            break
+            
+    if row_idx is None:
+        raise GoogleSheetsError("Could not find 'Current Balance' row in Settings sheet.")
+
+    update_url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/Settings!B{row_idx}?valueInputOption=USER_ENTERED"
+    payload = {"values": [[str(amount)]]}
+
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            put_response = await client.put(
+                update_url,
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            put_response.raise_for_status()
+    except httpx.HTTPError as exc:
+        logger.exception("Failed to update balance")
+        raise GoogleSheetsError("Failed to update balance in Google Sheets.") from exc
+
+
 class GoogleSheetsService:
     async def append_expense(self, expense: dict) -> str:
         return await append_expense(expense)

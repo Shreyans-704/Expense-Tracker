@@ -28,6 +28,7 @@ def main() -> None:
     application = Application.builder().token(token).build()
 
     application.add_handler(CommandHandler("start", service.handle_start))
+    application.add_handler(CommandHandler("balance", service.handle_balance))
     application.add_handler(CommandHandler("undo", service.handle_undo))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, service.handle_text))
     application.add_error_handler(service.handle_error)
