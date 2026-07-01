@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Request, BackgroundTasks
+with open("app/api/routers/telegram.py", "r", encoding="utf-8") as f:
+    content = f.read()
+
+new_content = """from fastapi import APIRouter, Request, BackgroundTasks
 from app.schemas.telegram import TelegramWebhookResponse
 from app.services.telegram_service import TelegramService
 from telegram import Update
@@ -55,3 +58,7 @@ async def telegram_webhook(request: Request) -> TelegramWebhookResponse:
 async def set_webhook() -> TelegramWebhookResponse:
     detail = await TelegramService.set_webhook()
     return TelegramWebhookResponse(ok=True, detail=detail)
+"""
+
+with open("app/api/routers/telegram.py", "w", encoding="utf-8") as f:
+    f.write(new_content)

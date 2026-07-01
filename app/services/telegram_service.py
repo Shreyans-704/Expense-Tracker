@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramService:
+
     @staticmethod
     async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle the /start command."""
