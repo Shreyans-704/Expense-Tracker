@@ -129,12 +129,46 @@ class TelegramService:
         }
 
         try:
-            await append_expense(expense_dict)
+            # 1. Read current balance
+            current_balance_str = await get_current_balance()
+            if not current_balance_str:
+                await update.message.reply_text("❌ Could not read current balance. Expense not saved.")
+                return
+
+            # 2. Parse balance float
+            import re
+            balance_cleaned = re.sub(r'[^\d.-]', '', current_balance_str)
+            if not balance_cleaned:
+                await update.message.reply_text("❌ Could not parse current balance. Expense not saved.")
+                return
+
+            old_balance = float(balance_cleaned)
+            new_balance = old_balance - float(parsed.amount)
+
+            # 3. Update balance first
+            await update_current_balance(new_balance)
+
+            # 4. Append expense
+            try:
+                await append_expense(expense_dict)
+            except Exception as e:
+                # 5. Rollback balance
+                logger.error("Append failed, rolling back balance: %s", e)
+                try:
+                    await update_current_balance(old_balance)
+                except Exception as rollback_err:
+                    logger.error("Rollback failed: %s", rollback_err)
+                raise e # re-raise to be caught by outer try-except
+
+            # 6. Reply
+            formatted_amount = f"₹{new_balance:,.0f}" if new_balance.is_integer() else f"₹{new_balance:,.2f}"
             await update.message.reply_text(
                 f"✅ Expense Added\n\n"
                 f"Amount: ₹{parsed.amount}\n"
                 f"Item: {parsed.item}\n"
-                f"Category: {parsed.category}"
+                f"Category: {parsed.category}\n\n"
+                f"Remaining Balance\n"
+                f"{formatted_amount}"
             )
         except GoogleSheetsError as exc:
             logger.error("Failed to append expense to Sheets: %s", exc)
