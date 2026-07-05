@@ -243,32 +243,44 @@ async def _access_token() -> str:
 
 
 def _blocking_access_token() -> str:
-    credentials_file = _required_setting(
-        settings.google_service_account_file,
-        "GOOGLE_SERVICE_ACCOUNT_FILE",
-    )
-
     try:
-        credentials = service_account.Credentials.from_service_account_file(
-            credentials_file,
-            scopes=[SHEETS_SCOPE],
-        )
-        credentials.refresh(Request())
-    except FileNotFoundError as exc:
-        logger.exception("Google service account file not found: %s", credentials_file)
-        raise GoogleSheetsError(
-            "Google service account credentials file was not found.",
-            troubleshooting=[
-                "Place credentials.json in the project root, or update GOOGLE_SERVICE_ACCOUNT_FILE.",
-                "Use a path relative to where you start uvicorn, or use an absolute path.",
-            ],
-        ) from exc
-    except Exception as exc:
-        logger.exception("Could not load or refresh Google service account credentials")
-        raise GoogleSheetsError("Could not authenticate with Google Sheets.") from exc
+        # ----- Render / Production -----
+        if settings.google_service_account_json:
+            credentials_info = json.loads(
+                settings.google_service_account_json.get_secret_value()
+            )
 
-    if not credentials.token:
-        raise GoogleSheetsError("Google authentication did not return an access token.")
+            credentials = service_account.Credentials.from_service_account_info(
+                credentials_info,
+                scopes=[SHEETS_SCOPE],
+            )
+
+        # ----- Local Development -----
+        else:
+            credentials_file = _required_setting(
+                settings.google_service_account_file,
+                "GOOGLE_SERVICE_ACCOUNT_FILE",
+            )
+
+            credentials = service_account.Credentials.from_service_account_file(
+                credentials_file,
+                scopes=[SHEETS_SCOPE],
+            )
+
+        credentials.refresh(Request())
+
+    except FileNotFoundError as exc:
+        logger.exception("Google service account file not found.")
+        raise GoogleSheetsError(
+            "Google service account credentials file was not found."
+        ) from exc
+
+    except Exception as exc:
+        logger.exception("Could not authenticate with Google Sheets.")
+        raise GoogleSheetsError(
+            "Could not authenticate with Google Sheets."
+        ) from exc
+
     return credentials.token
 
 
