@@ -21,6 +21,8 @@ class TelegramService:
             "First tell me your current account balance.\n\n"
             "Example\n"
             "Balance 25000\n\n"
+            "Merchants like Blinkit, Zomato, Swiggy, Zepto, BigBasket, Instamart, Amazon, "
+            "Flipkart, Myntra, and Meesho are tagged as Online Order.\n\n"
             "After that you can simply send\n"
             "Spent 250 on Lunch\n"
             "Coffee 80\n"

@@ -5,6 +5,20 @@ from typing import Optional
 
 from app.schemas.expense import ParsedExpense
 
+ONLINE_ORDER_KEYWORDS = [
+    "blinkit",
+    "zomato",
+    "swiggy",
+    "zepto",
+    "bigbasket",
+    "instamart",
+    "amazon",
+    "flipkart",
+    "myntra",
+    "meesho",
+    "online order",
+]
+
 CATEGORY_KEYWORDS = {
     "Food": [
         "lunch", "breakfast", "dinner", "snacks", "snack", "chocolate", "biscuit",
@@ -28,6 +42,11 @@ CATEGORY_KEYWORDS = {
 def determine_category(item: str) -> str:
     # Remove punctuation for matching, make lowercase
     item_lower = re.sub(r'[^\w\s]', '', item).lower()
+
+    # High-priority merchant rules should win before generic category matching.
+    for keyword in ONLINE_ORDER_KEYWORDS:
+        if keyword in item_lower:
+            return "Online Order"
     
     # Check whole word match or substring
     for cat, keywords in CATEGORY_KEYWORDS.items():

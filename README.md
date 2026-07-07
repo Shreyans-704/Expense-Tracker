@@ -25,6 +25,8 @@ GOOGLE_SHEETS_RANGE
 
 Use a Google Service Account credentials file such as `credentials.json`, then share the target spreadsheet with the service account email. Set `GOOGLE_SHEETS_RANGE` to an existing sheet tab, for example `Sheet1!A:F`.
 
+Merchants such as Blinkit, Zomato, Swiggy, Zepto, BigBasket, Instamart, Amazon, Flipkart, Myntra, and Meesho are categorized as `Online Order`.
+
 ## Test Google Sheets
 
 Put your service account JSON at the path configured by `GOOGLE_SERVICE_ACCOUNT_FILE`, then start the server from the project root:
@@ -44,7 +46,7 @@ The endpoint appends a sample row with `Date`, `Amount`, `Item`, `Category`, `Ne
 You can also test without starting FastAPI:
 
 ```bash
-python scripts/test_google_sheets.py
+python tests/test_google_sheets.py
 ```
 
 If the append fails, check the server or script logs. Common fixes:
